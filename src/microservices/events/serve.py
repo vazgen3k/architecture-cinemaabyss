@@ -5,7 +5,7 @@ import sys
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from faststream.kafka import KafkaBroker
-from fastream import FastReam
+from faststream import FastStream
 
 logger = logging.getLogger("events-service")
 logger.setLevel(logging.INFO)
