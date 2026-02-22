@@ -136,19 +136,6 @@ services:
     networks:
       - cinemaabyss-network
 
-  postman-tests:
-    build:
-      context: ./tests/postman
-      dockerfile: Dockerfile
-    container_name: cinemaabyss-postman-tests
-    depends_on:
-      - monolith
-      - movies-service
-      - proxy-service
-      - events-service
-    networks:
-      - cinemaabyss-network
-
 volumes:
   postgres-data:
 
