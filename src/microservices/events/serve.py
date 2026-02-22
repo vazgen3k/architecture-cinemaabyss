@@ -1,12 +1,24 @@
 import logging
 import os
+import sys
 
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from faststream.kafka import KafkaBroker
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("events-service")
+logger.setLevel(logging.INFO)
+
+handler = logging.StreamHandler(sys.stdout)  # ВАЖНО: stdout
+handler.setLevel(logging.INFO)
+
+formatter = logging.Formatter(
+    "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+)
+handler.setFormatter(formatter)
+
+logger.addHandler(handler)
+logger.propagate = False
 
 app = FastAPI()
 
