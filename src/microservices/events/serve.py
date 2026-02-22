@@ -5,6 +5,7 @@ import sys
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from faststream.kafka import KafkaBroker
+from fastream import FastReam
 
 logger = logging.getLogger("events-service")
 logger.setLevel(logging.INFO)
@@ -23,17 +24,18 @@ logger.propagate = False
 app = FastAPI()
 
 broker = KafkaBroker(os.getenv("KAFKA_BROKERS", "kafka:9092"))
-
+stream = FastStream(broker)
 
 @app.on_event("startup")
 async def on_startup():
     await broker.connect()
+    await stream.start()
 
 
 @app.on_event("shutdown")
 async def on_shutdown():
     await broker.close()
-
+    await stream.stop()
 
 @broker.subscriber("movie-events")
 async def movie_handler(body):
