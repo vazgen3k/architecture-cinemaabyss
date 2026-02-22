@@ -5,7 +5,8 @@
 [To-Be архитектура](docs/C4.puml)
 # Задание 2
 [Скриншот тестов](src/microservices/events/tests_srcn.png)
-[Скриншот UI](src/microservices/events/tests_srcn.png)
+
+[Скриншот UI](src/microservices/events/topics_scrn.png)
 
 # Задание 3
 
