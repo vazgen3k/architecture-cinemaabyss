@@ -1,0 +1,128 @@
+@startuml
+title Kinobezdna — Container Diagram (C4)
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+
+System_Boundary(kinobezdna, "Кинобездна (To-Be)") {
+
+  Container(web_app, "Web User", "Пользователь через браузер")
+  Container(mobile_app, "Mobile User", "Пользователь через мобильное приложение")
+  Container(tv__app, "Smart TV User", "Пользователь через Smart TV")
+
+  Container(api_gateway, "API Gateway", "Kong / NGINX / Envoy", "Единая точка входа: маршрутизация, аутентификация, rate-limit, наблюдаемость")
+
+  Container(web_bff, "Web BFF", "Go", "API для Web UI (агрегация данных, оптимизация ответов)")
+
+  Container(mobile_bff, "Mobile BFF", "Go + GraphQL", "GraphQL API для Mobile UI (агрегация данных, оптимизация под мобильный трафик)")
+
+  Container(tv_bff, "TV BFF", "Go", "API для Smart TV UI (лёгкие ответы, оптимизация под ТВ)")
+
+  Container(identity_svc, "Identity Service", "Go", "Аутентификация, токены, управление сессиями и устройствами")
+  ContainerDb(identity_db, "Identity DB", "PostgreSQL", "Пользователи, учётные данные/сессии, refresh-токены")
+
+  Container(profile_svc, "User Profile Service", "Go", "Профиль пользователя, настройки, предпочтения")
+  ContainerDb(profile_db, "Profile DB", "PostgreSQL", "Профили, настройки, локаль, устройства")
+
+  Container(subscription_svc, "Subscription / Entitlement Service", "Go", "Подписки и права доступа к контенту (entitlements)")
+  ContainerDb(subscription_db, "Subscription DB", "PostgreSQL", "Подписки, тарифы, статусы, права доступа")
+
+  Container(payment_svc, "Payment Service", "Go", "Создание платежей, статусы, возвраты, чеки")
+  ContainerDb(payment_db, "Payment DB", "PostgreSQL", "Платежи, транзакции, статусы, идемпотентность")
+
+  Container(catalog_svc, "Catalog / Metadata Service", "Go", "Каталог и метаданные фильмов/сериалов (жанры, актёры, карточки)")
+  ContainerDb(catalog_db, "Catalog DB", "PostgreSQL", "Метаданные каталога, связи, справочники")
+
+  Container(content_svc, "Content / Playback Service", "Go", "Доступ к контенту: плейбек, выдача ссылок/манифестов, контроль доступа")
+  ContainerDb(content_db, "Content DB", "PostgreSQL", "Ассеты, дорожки, качества, лицензии/региональные ограничения")
+  Container(storage_s3, "Object Storage", "S3", "Видео/аудио файлы, постеры, ассеты")
+
+  Container(activity_svc, "User Activity Service", "Go", "Избранное, оценки, история, прогресс просмотра")
+  ContainerDb(activity_db, "Activity DB", "PostgreSQL", "Оценки, избранное, прогресс, события просмотра")
+
+  Container(search_svc, "Search Service", "Go", "Поиск по каталогу и подсказки")
+  Container(search_index, "Search Index", "OpenSearch", "Индекс поиска по каталогу")
+
+  Container(reco_integration_svc, "Recommendation Integration Service", "Go", "Интеграция с рекомендательной системой, хранение выдачи рекомендаций")
+  ContainerDb(reco_store, "Recommendations Store", "Redis / PostgreSQL", "Кэш/хранилище рекомендаций по пользователям")
+
+  ContainerQueue(kafka, "Kafka (Event Bus)", "Kafka", "Событийная шина для доменных событий и интеграций")
+}
+
+System_Ext(reco_ext, "External Recommendation System", "Сторонняя рекомендательная система")
+System_Ext(pay_ext, "External Payment Provider(s)", "Платёжные провайдеры/эквайринг")
+System_Ext(cdn_ext, "CDN", "Доставка контента пользователям (HLS/DASH)")
+
+Rel(web_app, api_gateway, "Запросы API", "HTTPS")
+Rel(mobile_app, api_gateway, "GraphQL API", "HTTPS")
+Rel(tv__app, api_gateway, "Запросы API", "HTTPS")
+
+Rel(api_gateway, web_bff, "Маршрутизация запросов Web", "HTTPS")
+Rel(api_gateway, mobile_bff, "GraphQL queries/mutations", "HTTPS")
+Rel(api_gateway, tv_bff, "Маршрутизация запросов TV", "HTTPS")
+
+Rel(web_bff, identity_svc, "Auth / токены", "HTTPS")
+Rel(mobile_bff, identity_svc, "Auth / токены", "HTTPS")
+Rel(tv_bff, identity_svc, "Auth / токены", "HTTPS")
+
+Rel(web_bff, profile_svc, "Профиль/настройки", "HTTPS")
+Rel(mobile_bff, profile_svc, "Профиль/настройки", "HTTPS")
+Rel(tv_bff, profile_svc, "Профиль/настройки", "HTTPS")
+
+Rel(web_bff, catalog_svc, "Каталог/карточки", "HTTPS")
+Rel(mobile_bff, catalog_svc, "Каталог/карточки", "HTTPS")
+Rel(tv_bff, catalog_svc, "Каталог/карточки", "HTTPS")
+
+Rel(web_bff, search_svc, "Поиск", "HTTPS")
+Rel(mobile_bff, search_svc, "Поиск", "HTTPS")
+Rel(tv_bff, search_svc, "Поиск", "HTTPS")
+
+Rel(web_bff, activity_svc, "Избранное/оценки/прогресс", "HTTPS")
+Rel(mobile_bff, activity_svc, "Избранное/оценки/прогресс", "HTTPS")
+Rel(tv_bff, activity_svc, "Избранное/оценки/прогресс", "HTTPS")
+
+Rel(web_bff, subscription_svc, "Проверка прав доступа (entitlements)", "HTTPS")
+Rel(mobile_bff, subscription_svc, "Проверка прав доступа (entitlements)", "HTTPS")
+Rel(tv_bff, subscription_svc, "Проверка прав доступа (entitlements)", "HTTPS")
+
+Rel(web_bff, payment_svc, "Оплата/управление подпиской", "HTTPS")
+Rel(mobile_bff, payment_svc, "Оплата/управление подпиской", "HTTPS")
+
+Rel(web_bff, content_svc, "Запуск воспроизведения (playback)", "HTTPS")
+Rel(mobile_bff, content_svc, "Запуск воспроизведения (playback)", "HTTPS")
+Rel(tv_bff, content_svc, "Запуск воспроизведения (playback)", "HTTPS")
+
+Rel(web_bff, reco_integration_svc, "Получить рекомендации", "HTTPS")
+Rel(mobile_bff, reco_integration_svc, "Получить рекомендации", "HTTPS")
+Rel(tv_bff, reco_integration_svc, "Получить рекомендации", "HTTPS")
+
+Rel(identity_svc, identity_db, "Чтение/запись", "SQL")
+Rel(profile_svc, profile_db, "Чтение/запись", "SQL")
+Rel(subscription_svc, subscription_db, "Чтение/запись", "SQL")
+Rel(payment_svc, payment_db, "Чтение/запись", "SQL")
+Rel(catalog_svc, catalog_db, "Чтение/запись", "SQL")
+Rel(content_svc, content_db, "Чтение/запись", "SQL")
+Rel(content_svc, storage_s3, "Чтение ассетов", "S3 API")
+Rel(activity_svc, activity_db, "Чтение/запись", "SQL")
+Rel(search_svc, search_index, "Индексирование/поиск", "HTTP")
+Rel(reco_integration_svc, reco_store, "Кэш/хранилище", "Redis/SQL")
+
+Rel(identity_svc, kafka, "UserRegistered/UserLoggedIn (events)", "Kafka")
+Rel(subscription_svc, kafka, "SubscriptionActivated/Expired (events)", "Kafka")
+Rel(payment_svc, kafka, "PaymentSucceeded/Failed (events)", "Kafka")
+Rel(activity_svc, kafka, "PlaybackStarted/Completed/RatingAdded (events)", "Kafka")
+Rel(catalog_svc, kafka, "CatalogUpdated (events)", "Kafka")
+
+Rel(kafka, reco_integration_svc, "События для рекомендаций (consume)", "Kafka")
+Rel(reco_integration_svc, kafka, "Запрос/результаты рекомендаций (produce/consume)", "Kafka")
+
+Rel(reco_integration_svc, reco_ext, "Обмен событиями/результатами рекомендаций", "Kafka/HTTP")
+Rel(payment_svc, pay_ext, "Платёжные операции", "HTTPS")
+
+Rel(storage_s3, cdn_ext, "Origin", "HTTPS")
+Rel(cdn_ext, web_app, "Стриминг контента", "HTTPS")
+Rel(cdn_ext, mobile_app, "Стриминг контента", "HTTPS")
+Rel(cdn_ext, tv__app, "Стриминг контента", "HTTPS")
+
+@enduml
